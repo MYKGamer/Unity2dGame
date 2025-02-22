@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Learn Unity 2d Day-1.sln"
+    "dotnet.defaultSolution": "Unity2dGame.sln"
 }
