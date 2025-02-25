@@ -7,10 +7,16 @@ public class Player_Movement : MonoBehaviour
 {
     Rigidbody2D rb;
     SpriteRenderer spriteRenderer;  // SpriteRenderer reference for flipping
+
     public float speed = 5f;
     public float smoothTime = 0.1f; // Smoothness factor, jitna chota value, utna tez smoothing
+
     float moveInput;             // Horizontal input value
     float velocityX = 0f;        // Reference velocity for SmoothDamp
+
+    // Platform related variables
+    public bool IsOnPlatform;
+    public Rigidbody2D PlatformRB;
 
     void Awake()
     {
@@ -21,9 +27,17 @@ public class Player_Movement : MonoBehaviour
     void Update()
     {
         float targetSpeed = speed * moveInput;
-        // SmoothDamp se current velocity ko smoothly targetSpeed ke taraf adjust karte hain
         float smoothVelocity = Mathf.SmoothDamp(rb.velocity.x, targetSpeed, ref velocityX, smoothTime);
-        rb.velocity = new Vector2(smoothVelocity, rb.velocity.y);
+        
+        // Agar player platform par hai, to platform ki horizontal velocity add karo.
+        if (IsOnPlatform && PlatformRB != null)
+        {
+            rb.velocity = new Vector2(smoothVelocity + PlatformRB.velocity.x, rb.velocity.y);
+        }
+        else
+        {
+            rb.velocity = new Vector2(smoothVelocity, rb.velocity.y);
+        }
 
         Flip(); // Flip function call to update sprite direction
     }
@@ -42,7 +56,7 @@ public class Player_Movement : MonoBehaviour
         }
     }
 
-    // Flip function: Agar left button press ho to flip enable (true) ho aur right button press par disable (false)
+    // Flip function: Agar left button press ho to flip enable (true) ho aur right button press par flip disable (false)
     void Flip()
     {
         if (moveInput < 0)
