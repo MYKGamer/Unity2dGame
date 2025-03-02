@@ -16,11 +16,17 @@ public class MovingPlatform : MonoBehaviour
     // Waypoints array me current index.
     private int currentWaypointIndex = 0;
     
-    // Platform ke Rigidbody2D component ka reference (ensure karein ki Rigidbody2D, Kinematic mode me ho)
+    // Yeh flag determine karta hai ki platform ab reverse direction me move kar raha hai.
+    private bool isReversing = false;
+    
+    // Rigidbody2D component ka reference (ensure karein ki Rigidbody2D, Kinematic mode me ho)
     private Rigidbody2D rb;
-
-    // Platform velocity calculate karne ke liye (agar future me zarurat ho)
+    
+    // (Optional) Platform velocity calculate karne ke liye.
     private Vector3 previousPosition;
+    
+    // Waiting flag to stop movement for a duration
+    private bool isWaiting = false;
 
     void Awake()
     {
@@ -42,27 +48,62 @@ public class MovingPlatform : MonoBehaviour
         if (waypoints.Length == 0)
             return; // Agar koi waypoints assign nahi kiye gaye, to kuch na karo.
         
-        // Platform ko current position se targetPosition tak moveTowards se move karwayein.
-        transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+        // Agar platform waiting state me nahi hai, to move karwayein.
+        if (!isWaiting)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+        }
 
-        // (Optional) Agar aap platform ki velocity calculate karna chahte hain:
-        // Vector3 currentVelocity = (transform.position - previousPosition) / Time.deltaTime;
         previousPosition = transform.position;
 
-        // Agar platform target position ke itna pass aa gaya ho, to next waypoint par switch karo.
-        if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
+        // Agar platform target ke bahut nazdeek pahunch jata hai aur waiting nahi hai, to wait coroutine start karo.
+        if (!isWaiting && Vector3.Distance(transform.position, targetPosition) < 0.1f)
         {
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
-            targetPosition = waypoints[currentWaypointIndex].position;
+            StartCoroutine(WaitAtWaypoint());
         }
     }
 
-    // Jab Player platform ke trigger zone me enter kare
+    // Coroutine jo platform ko 0.5 second tak rukne deti hai, phir waypoint update karti hai.
+    IEnumerator WaitAtWaypoint()
+    {
+        isWaiting = true;
+        yield return new WaitForSeconds(0.6f);
+
+        // Waypoint index update karne ka logic: Forward ya reverse direction ke hisaab se.
+        if (!isReversing)
+        {
+            if (currentWaypointIndex < waypoints.Length - 1)
+            {
+                currentWaypointIndex++;
+            }
+            else
+            {
+                isReversing = true;
+                currentWaypointIndex--;
+            }
+        }
+        else
+        {
+            if (currentWaypointIndex > 0)
+            {
+                currentWaypointIndex--;
+            }
+            else
+            {
+                isReversing = false;
+                currentWaypointIndex++;
+            }
+        }
+        targetPosition = waypoints[currentWaypointIndex].position;
+        isWaiting = false;
+    }
+
+    // Jab Player platform ke trigger zone me enter kare.
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))
         {
-            // Player ko platform ka child bana lo taki platform ke sath move ho (optional)
+            // Player ko platform ka child bana lo taki platform ke sath move ho (optional).
             collision.transform.parent = transform;
             
             // Player_Movement script ko access karke platform ke related variables set karo.
@@ -75,7 +116,7 @@ public class MovingPlatform : MonoBehaviour
         }
     }
 
-    // Jab Player platform se exit kare
+    // Jab Player platform se exit kare.
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))

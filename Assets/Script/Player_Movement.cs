@@ -27,16 +27,16 @@ public class Player_Movement : MonoBehaviour
     void Update()
     {
         float targetSpeed = speed * moveInput;
-        float smoothVelocity = Mathf.SmoothDamp(rb.velocity.x, targetSpeed, ref velocityX, smoothTime);
+        float smoothVelocity = Mathf.SmoothDamp(rb.linearVelocity.x, targetSpeed, ref velocityX, smoothTime);
         
         // Agar player platform par hai, to platform ki horizontal velocity add karo.
         if (IsOnPlatform && PlatformRB != null)
         {
-            rb.velocity = new Vector2(smoothVelocity + PlatformRB.velocity.x, rb.velocity.y);
+            rb.linearVelocity = new Vector2(smoothVelocity + PlatformRB.linearVelocity.x, rb.linearVelocity.y);
         }
         else
         {
-            rb.velocity = new Vector2(smoothVelocity, rb.velocity.y);
+            rb.linearVelocity = new Vector2(smoothVelocity, rb.linearVelocity.y);
         }
 
         Flip(); // Flip function call to update sprite direction
