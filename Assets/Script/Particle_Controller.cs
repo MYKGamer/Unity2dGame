@@ -9,16 +9,20 @@ public class Particle_Controller : MonoBehaviour
     public ParticleSystem fallParticle;
     public ParticleSystem touchParticle;
     
-    // Ye booleans, collision events se update honge.
+    // Booleans, collision events se update honge:
     public bool isGrounded = false;
     public bool isWallTouch = false;
     
     // Player ke Rigidbody2D ka reference.
-    // Yeh manually assign bhi kiya ja sakta hai, lekin agar null ho to Awake() me parent se assign ho jayega.
+    // Agar manually assign na ho to Awake() me parent (Player) se assign ho jayega.
     public Rigidbody2D rb;
     
     // Horizontal movement threshold.
     public float movementThreshold = 0.1f;
+    
+    // References to the two BoxCollider2D components on this Particle GameObject:
+    public BoxCollider2D leftCollider;
+    public BoxCollider2D rightCollider;
     
     void Awake()
     {
@@ -65,6 +69,26 @@ public class Particle_Controller : MonoBehaviour
         {
             if (touchParticle.isPlaying)
                 touchParticle.Stop();
+        }
+        
+        // Manage the colliders based on horizontal movement:
+        if (rb.linearVelocity.x < -movementThreshold)
+        {
+            // Player moving left: enable leftCollider, disable rightCollider.
+            if (leftCollider != null) leftCollider.enabled = true;
+            if (rightCollider != null) rightCollider.enabled = false;
+        }
+        else if (rb.linearVelocity.x > movementThreshold)
+        {
+            // Player moving right: enable rightCollider, disable leftCollider.
+            if (leftCollider != null) leftCollider.enabled = false;
+            if (rightCollider != null) rightCollider.enabled = true;
+        }
+        else
+        {
+            // No horizontal movement: enable both colliders.
+            if (leftCollider != null) leftCollider.enabled = true;
+            if (rightCollider != null) rightCollider.enabled = true;
         }
     }
     
