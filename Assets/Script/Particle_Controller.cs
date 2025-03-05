@@ -7,11 +7,11 @@ public class Particle_Controller : MonoBehaviour
     // Particle systems ke references:
     public ParticleSystem movementParticle;
     public ParticleSystem fallParticle;
-    public ParticleSystem touchParticle;
+    public ParticleSystem leftTouchParticle;
+    public ParticleSystem rightTouchParticle;
     
-    // Booleans, collision events se update honge:
+    // Ground ke liye:
     public bool isGrounded = false;
-    public bool isWallTouch = false;
     
     // Player ke Rigidbody2D ka reference.
     // Agar manually assign na ho to Awake() me parent (Player) se assign ho jayega.
@@ -21,8 +21,12 @@ public class Particle_Controller : MonoBehaviour
     public float movementThreshold = 0.1f;
     
     // References to the two BoxCollider2D components on this Particle GameObject:
-    public BoxCollider2D leftCollider;
-    public BoxCollider2D rightCollider;
+    public BoxCollider2D leftTouchCollider;
+    public BoxCollider2D rightTouchCollider;
+    
+    // Persistent flags to ensure each touch particle plays only once per collision event.
+    private bool leftParticleHasPlayed = false;
+    private bool rightParticleHasPlayed = false;
     
     void Awake()
     {
@@ -35,7 +39,7 @@ public class Particle_Controller : MonoBehaviour
     
     void Update()
     {
-        // Movement Particle: Agar player horizontally move kar raha ho.
+        // --- Movement Particle Logic ---
         if (Mathf.Abs(rb.linearVelocity.x) > movementThreshold)
         {
             if (!movementParticle.isPlaying)
@@ -47,7 +51,7 @@ public class Particle_Controller : MonoBehaviour
                 movementParticle.Stop();
         }
         
-        // Fall Particle: Agar player ground par hai.
+        // --- Fall Particle Logic ---
         if (isGrounded)
         {
             if (!fallParticle.isPlaying)
@@ -59,49 +63,103 @@ public class Particle_Controller : MonoBehaviour
                 fallParticle.Stop();
         }
         
-        // Touch Particle: Agar player wall touch kar raha ho.
-        if (isWallTouch)
-        {
-            if (!touchParticle.isPlaying)
-                touchParticle.Play();
-        }
-        else
-        {
-            if (touchParticle.isPlaying)
-                touchParticle.Stop();
-        }
-        
-        // Manage the colliders based on horizontal movement:
+        // --- Manage Touch Colliders Based on Horizontal Movement ---
         if (rb.linearVelocity.x < -movementThreshold)
         {
-            // Player moving left: enable leftCollider, disable rightCollider.
-            if (leftCollider != null) leftCollider.enabled = true;
-            if (rightCollider != null) rightCollider.enabled = false;
+            // Player moving left: enable left collider, disable right collider.
+            if (leftTouchCollider != null) leftTouchCollider.enabled = true;
+            if (rightTouchCollider != null) rightTouchCollider.enabled = false;
         }
         else if (rb.linearVelocity.x > movementThreshold)
         {
-            // Player moving right: enable rightCollider, disable leftCollider.
-            if (leftCollider != null) leftCollider.enabled = false;
-            if (rightCollider != null) rightCollider.enabled = true;
+            // Player moving right: enable right collider, disable left collider.
+            if (leftTouchCollider != null) leftTouchCollider.enabled = false;
+            if (rightTouchCollider != null) rightTouchCollider.enabled = true;
         }
         else
         {
             // No horizontal movement: enable both colliders.
-            if (leftCollider != null) leftCollider.enabled = true;
-            if (rightCollider != null) rightCollider.enabled = true;
+            if (leftTouchCollider != null) leftTouchCollider.enabled = true;
+            if (rightTouchCollider != null) rightTouchCollider.enabled = true;
+        }
+        
+        // --- Check Overlaps for Left and Right Touch Colliders ---
+        bool leftTouchDetected = false;
+        bool rightTouchDetected = false;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useTriggers = true;
+        filter.useLayerMask = false;
+        Collider2D[] results = new Collider2D[10];
+        
+        // Left touch collider check (trigger with "Diwar" tag)
+        if (leftTouchCollider != null && leftTouchCollider.enabled)
+        {
+            int leftCount = leftTouchCollider.Overlap(filter, results);
+            for (int i = 0; i < leftCount; i++)
+            {
+                if (results[i].CompareTag("Diwar"))
+                {
+                    leftTouchDetected = true;
+                    break;
+                }
+            }
+        }
+        
+        // Right touch collider check (trigger with "Wall" tag)
+        if (rightTouchCollider != null && rightTouchCollider.enabled)
+        {
+            int rightCount = rightTouchCollider.Overlap(filter, results);
+            for (int i = 0; i < rightCount; i++)
+            {
+                if (results[i].CompareTag("Wall"))
+                {
+                    rightTouchDetected = true;
+                    break;
+                }
+            }
+        }
+        
+        // --- Control Left Touch Particle ---
+        if (leftTouchDetected)
+        {
+            if (!leftParticleHasPlayed)
+            {
+                if (!leftTouchParticle.isPlaying)
+                    leftTouchParticle.Play();
+                leftParticleHasPlayed = true;
+            }
+        }
+        else
+        {
+            if (leftTouchParticle.isPlaying)
+                leftTouchParticle.Stop();
+            leftParticleHasPlayed = false;
+        }
+        
+        // --- Control Right Touch Particle ---
+        if (rightTouchDetected)
+        {
+            if (!rightParticleHasPlayed)
+            {
+                if (!rightTouchParticle.isPlaying)
+                    rightTouchParticle.Play();
+                rightParticleHasPlayed = true;
+            }
+        }
+        else
+        {
+            if (rightTouchParticle.isPlaying)
+                rightTouchParticle.Stop();
+            rightParticleHasPlayed = false;
         }
     }
     
-    // Collision triggers: Ground aur Wall tag ke liye.
+    // Collision triggers for Ground (for fall particle)
     void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Ground"))
         {
             isGrounded = true;
-        }
-        if (collision.CompareTag("Wall"))
-        {
-            isWallTouch = true;
         }
     }
     
@@ -110,10 +168,6 @@ public class Particle_Controller : MonoBehaviour
         if (collision.CompareTag("Ground"))
         {
             isGrounded = false;
-        }
-        if (collision.CompareTag("Wall"))
-        {
-            isWallTouch = false;
         }
     }
 }
