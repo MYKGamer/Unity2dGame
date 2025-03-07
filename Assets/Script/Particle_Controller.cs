@@ -4,39 +4,57 @@ using UnityEngine;
 
 public class Particle_Controller : MonoBehaviour
 {
-    // Particle systems ke references:
+    // ---------------------------------------------------------------------
+    // Particle System References
+    // ---------------------------------------------------------------------
     public ParticleSystem movementParticle;
     public ParticleSystem fallParticle;
     public ParticleSystem leftTouchParticle;
     public ParticleSystem rightTouchParticle;
     
-    // Ground ke liye:
+    // ---------------------------------------------------------------------
+    // Ground Detection
+    // ---------------------------------------------------------------------
     public bool isGrounded = false;
     
-    // Player ke Rigidbody2D ka reference.
-    // Agar manually assign na ho to Awake() me parent (Player) se assign ho jayega.
+    // ---------------------------------------------------------------------
+    // Player Rigidbody Reference
+    // If not manually assigned, this will be set from the parent (Player) in Awake()
+    // ---------------------------------------------------------------------
     public Rigidbody2D rb;
     
-    // Horizontal movement threshold.
+    // ---------------------------------------------------------------------
+    // Movement Threshold for triggering particles
+    // ---------------------------------------------------------------------
     public float movementThreshold = 0.1f;
     
-    // References to the two BoxCollider2D components on this Particle GameObject:
+    // ---------------------------------------------------------------------
+    // Touch Collider References
+    // These are the two BoxCollider2D components on this Particle GameObject
+    // ---------------------------------------------------------------------
     public BoxCollider2D leftTouchCollider;
     public BoxCollider2D rightTouchCollider;
     
-    // Persistent flags to ensure each touch particle plays only once per collision event.
+    // ---------------------------------------------------------------------
+    // Persistent Flags to ensure each touch particle plays only once per collision event
+    // ---------------------------------------------------------------------
     private bool leftParticleHasPlayed = false;
     private bool rightParticleHasPlayed = false;
     
+    // ---------------------------------------------------------------------
+    // Awake: Auto-assign Rigidbody2D from parent if not set manually
+    // ---------------------------------------------------------------------
     void Awake()
     {
-        // Agar rb manually assign nahi hua, to parent (Player GameObject) se Rigidbody2D get karo.
         if (rb == null && transform.parent != null)
         {
             rb = transform.parent.GetComponent<Rigidbody2D>();
         }
     }
     
+    // ---------------------------------------------------------------------
+    // Update: Main Loop for Particle Control
+    // ---------------------------------------------------------------------
     void Update()
     {
         // --- Movement Particle Logic ---
@@ -56,6 +74,7 @@ public class Particle_Controller : MonoBehaviour
         {
             if (!fallParticle.isPlaying)
                 fallParticle.Play();
+                isGrounded = false;  // Reset flag after playing
         }
         else
         {
@@ -154,7 +173,9 @@ public class Particle_Controller : MonoBehaviour
         }
     }
     
-    // Collision triggers for Ground (for fall particle)
+    // ---------------------------------------------------------------------
+    // Collision Triggers for Ground (affecting Fall Particle)
+    // ---------------------------------------------------------------------
     void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Ground"))
