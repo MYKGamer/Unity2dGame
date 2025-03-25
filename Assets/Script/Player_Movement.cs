@@ -18,6 +18,15 @@ public class Player_Movement : MonoBehaviour
     public bool IsOnPlatform;
     public Rigidbody2D PlatformRB;
 
+    // Jump Controller (Updated to Double Jump) .................................................
+    public float jumpForce = 10f; // Jump power
+    public LayerMask groundLayer; // Ground layer
+    public Transform groundCheck; // Ground check position
+    public float groundCheckRadius = 0.2f; // Ground detection radius
+
+    private bool isGrounded;
+    private bool canDoubleJump;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -40,6 +49,27 @@ public class Player_Movement : MonoBehaviour
         }
 
         Flip(); // Flip function call to update sprite direction
+
+        // Updated Jump Code (From PlayerDoubleJump Script) .......................................................
+        isGrounded = Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckRadius, groundLayer);
+
+        if (isGrounded)
+        {
+            canDoubleJump = true;
+        }
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            if (isGrounded) // First jump
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            }
+            else if (canDoubleJump) // Double jump
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                canDoubleJump = false;
+            }
+        }
     }
 
     // Unity Events ke liye correct signature:
@@ -66,6 +96,15 @@ public class Player_Movement : MonoBehaviour
         else if (moveInput > 0)
         {
             spriteRenderer.flipX = false;
+        }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        if (groundCheck != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(groundCheck.position, groundCheck.position + Vector3.down * groundCheckRadius);
         }
     }
 }
